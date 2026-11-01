@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import plotly.express as px
 
 
 # -------------------- CONFIGURATION --------------------
@@ -563,6 +564,91 @@ elif page == "Dashboard":
             )
         else:
             st.info("Your monthly trend will appear here.")
+
+    # -------------------- INTERACTIVE EXPENSE CHARTS --------------------
+    st.divider()
+    st.subheader("📊 Expense Analytics")
+
+    if not df.empty:
+        category_data = (
+            df.groupby("category", as_index=False)["amount"]
+            .sum()
+            .sort_values("amount", ascending=False)
+        )
+        monthly_data = (
+            df.groupby("month", as_index=False)["amount"]
+            .sum()
+            .sort_values("month")
+        )
+        payment_data = (
+            df.groupby("payment_method", as_index=False)["amount"]
+            .sum()
+            .sort_values("amount", ascending=False)
+        )
+
+        chart_left, chart_right = st.columns(2)
+
+        with chart_left:
+            st.markdown("#### Category-wise Spending")
+            pie_fig = px.pie(
+                category_data,
+                names="category",
+                values="amount",
+                hole=0.35,
+                title="Expense Distribution by Category"
+            )
+            pie_fig.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate="%{label}<br>Amount: ₹%{value:,.2f}<br>Share: %{percent}<extra></extra>"
+            )
+            st.plotly_chart(pie_fig, use_container_width=True)
+
+        with chart_right:
+            st.markdown("#### Monthly Expense Comparison")
+            bar_fig = px.bar(
+                monthly_data,
+                x="month",
+                y="amount",
+                text_auto=".2s",
+                title="Total Spending per Month",
+                labels={"month": "Month", "amount": "Amount (₹)"}
+            )
+            bar_fig.update_layout(xaxis_title="Month", yaxis_title="Amount (₹)")
+            st.plotly_chart(bar_fig, use_container_width=True)
+
+        chart_left, chart_right = st.columns(2)
+
+        with chart_left:
+            st.markdown("#### Payment Method Distribution")
+            donut_fig = px.pie(
+                payment_data,
+                names="payment_method",
+                values="amount",
+                hole=0.55,
+                title="Spending by Payment Method"
+            )
+            donut_fig.update_traces(
+                textposition="inside",
+                textinfo="percent+label",
+                hovertemplate="%{label}<br>Amount: ₹%{value:,.2f}<br>Share: %{percent}<extra></extra>"
+            )
+            st.plotly_chart(donut_fig, use_container_width=True)
+
+        with chart_right:
+            st.markdown("#### Monthly Spending Trend")
+            line_fig = px.line(
+                monthly_data,
+                x="month",
+                y="amount",
+                markers=True,
+                title="How Your Spending Changes Over Time",
+                labels={"month": "Month", "amount": "Amount (₹)"}
+            )
+            line_fig.update_layout(xaxis_title="Month", yaxis_title="Amount (₹)")
+            st.plotly_chart(line_fig, use_container_width=True)
+    else:
+        st.info("Add expenses to view pie charts and spending graphs.")
 
     st.markdown("#### Recent expenses")
 
